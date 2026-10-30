@@ -1,4 +1,6 @@
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useEffect, useState } from 'react'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useSpecular } from '../hooks/useSpecular'
 import { SERVICE_LABELS, STATUS_LABELS, text } from '../labels'
 import type { RecentByService } from '../hooks/useDashboardData'
 import { RECENT_CALLS } from '../hooks/useDashboardData'
@@ -6,12 +8,13 @@ import type { CallStatus, ServiceId } from '../types'
 import { SERVICE_IDS } from '../types'
 
 export const SERVICE_COLORS: Record<ServiceId, string> = {
-  inventory: '#38d6e6',
-  orders: '#ffb54d',
-  payments: '#a99bff',
+  inventory: '#0891b2',
+  orders: '#d97706',
+  payments: '#6d5bd0',
 }
 
-const DANGER = '#ff5c70'
+const DANGER = '#dc2626'
+const AXIS = '#36506e'
 
 type ChartRow = { call: number } & Partial<Record<ServiceId, number>> &
   Partial<Record<`${ServiceId}Status`, CallStatus>>
@@ -76,7 +79,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
         const id = item.dataKey as ServiceId
         const status = item.payload?.[`${id}Status`]
         return (
-          <p key={id} style={{ color: item.color }}>
+          <p key={id} style={{ color: SERVICE_COLORS[id] }}>
             {SERVICE_LABELS[id]}: {item.value} {text.ms}
             {status === 'ERROR' && ` · ${STATUS_LABELS.ERROR}`}
           </p>
@@ -86,15 +89,53 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   )
 }
 
-export function ResponseChart({ recent }: { recent: RecentByService | null }) {
+interface ResponseChartProps {
+  recent: RecentByService | null
+  hidden: ReadonlySet<ServiceId>
+  focus: ServiceId | ''
+  onToggleSeries: (id: ServiceId) => void
+}
+
+export function ResponseChart({ recent, hidden, focus, onToggleSeries }: ResponseChartProps) {
+  const { ref, onPointerMove } = useSpecular<HTMLElement>()
+  const [hovered, setHovered] = useState<ServiceId | null>(null)
+  const [drawIn, setDrawIn] = useState(true)
   const hasData = recent !== null && SERVICE_IDS.some((id) => recent[id].length > 0)
+  const emphasis = hovered ?? (focus || null)
+
+  // Lines draw in once on first paint; later polls update in place so the chart stays calm.
+  useEffect(() => {
+    if (!hasData) return
+    const timer = window.setTimeout(() => setDrawIn(false), 1400)
+    return () => window.clearTimeout(timer)
+  }, [hasData])
 
   return (
-    <section className="glass panel" aria-labelledby="chart-title">
+    <section ref={ref} onPointerMove={onPointerMove} className="glass panel" aria-labelledby="chart-title">
       <header className="panel__head">
         <div>
           <h2 id="chart-title">{text.chartTitle}</h2>
           <p className="panel__sub">{text.chartSubtitle}</p>
+        </div>
+
+        <div className="legend" role="group" aria-label={text.legendToggle}>
+          {SERVICE_IDS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              className="legend__chip"
+              data-service={id}
+              aria-pressed={!hidden.has(id)}
+              onClick={() => onToggleSeries(id)}
+              onPointerEnter={() => setHovered(id)}
+              onPointerLeave={() => setHovered(null)}
+              onFocus={() => setHovered(id)}
+              onBlur={() => setHovered(null)}
+            >
+              <span className="legend__swatch" />
+              {SERVICE_LABELS[id]}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -104,38 +145,32 @@ export function ResponseChart({ recent }: { recent: RecentByService | null }) {
         <div className="chart" role="img" aria-label={`${text.chartTitle}. ${text.chartSubtitle}`}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={buildRows(recent)} margin={{ top: 8, right: 12, bottom: 4, left: -8 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-              <XAxis
-                dataKey="call"
-                stroke="rgba(226,234,255,0.5)"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
+              <CartesianGrid stroke="rgba(15, 40, 80, 0.1)" vertical={false} />
+              <XAxis dataKey="call" stroke={AXIS} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
               <YAxis
-                stroke="rgba(226,234,255,0.5)"
+                stroke={AXIS}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 12 }}
                 unit={` ${text.ms}`}
                 width={64}
               />
-              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.25)' }} />
-              <Legend
-                formatter={(value: string) => SERVICE_LABELS[value as ServiceId]}
-                wrapperStyle={{ fontSize: 13, paddingTop: 8 }}
-              />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(15, 40, 80, 0.3)' }} />
               {SERVICE_IDS.map((id) => (
                 <Line
                   key={id}
                   type="monotone"
                   dataKey={id}
+                  hide={hidden.has(id)}
                   stroke={SERVICE_COLORS[id]}
-                  strokeWidth={2.5}
+                  strokeOpacity={emphasis && emphasis !== id ? 0.22 : 1}
+                  strokeWidth={emphasis === id ? 3.5 : 2.5}
                   dot={dots[id]}
                   activeDot={{ r: 6 }}
                   connectNulls
-                  isAnimationActive={false}
+                  isAnimationActive={drawIn}
+                  animationDuration={900}
+                  animationEasing="ease-out"
                 />
               ))}
             </LineChart>

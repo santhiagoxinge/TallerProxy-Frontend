@@ -1,5 +1,7 @@
-import { Fragment, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { SERVICE_LABELS, STATUS_LABELS, text } from '../labels'
+import { EASE_OUT } from '../motion'
 import type { LogEntry, PagedLogs } from '../types'
 import { AlertIcon, CheckIcon, ChevronIcon } from './Icons'
 
@@ -57,6 +59,15 @@ function LogDetails({ entry }: { entry: LogEntry }) {
 
 export function LogsTable({ logs, filtersActive, onPageChange }: LogsTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const known = useRef<Set<string>>(new Set())
+
+  const entries = logs?.content ?? []
+  // Rows the user has not seen yet slide in; the very first paint stays still.
+  const hasHistory = known.current.size > 0
+
+  useEffect(() => {
+    known.current = new Set(entries.map((entry) => entry.requestId))
+  })
 
   const toggle = (requestId: string) =>
     setExpanded((current) => {
@@ -65,7 +76,7 @@ export function LogsTable({ logs, filtersActive, onPageChange }: LogsTableProps)
       return next
     })
 
-  if (logs && logs.content.length === 0) {
+  if (logs && entries.length === 0) {
     return (
       <div className="empty">
         <p>{filtersActive ? text.logsNoMatch : text.logsEmpty}</p>
@@ -94,12 +105,18 @@ export function LogsTable({ logs, filtersActive, onPageChange }: LogsTableProps)
             </tr>
           </thead>
           <tbody>
-            {(logs?.content ?? []).map((entry) => {
+            {entries.map((entry, index) => {
               const open = expanded.has(entry.requestId)
               const detailsId = `details-${entry.requestId}`
+              const isNew = hasHistory && !known.current.has(entry.requestId)
               return (
                 <Fragment key={entry.requestId}>
-                  <tr className={`log-row ${entry.status === 'ERROR' ? 'is-error' : ''} ${open ? 'is-open' : ''}`}>
+                  <motion.tr
+                    className={`log-row ${entry.status === 'ERROR' ? 'is-error' : ''} ${open ? 'is-open' : ''} ${isNew ? 'is-fresh' : ''}`}
+                    initial={isNew ? { opacity: 0, transform: 'translateY(-10px)' } : false}
+                    animate={{ opacity: 1, transform: 'translateY(0px)' }}
+                    transition={{ duration: 0.28, ease: EASE_OUT, delay: Math.min(index, 8) * 0.03 }}
+                  >
                     <td className="col-toggle">
                       <button
                         type="button"
@@ -132,14 +149,25 @@ export function LogsTable({ logs, filtersActive, onPageChange }: LogsTableProps)
                       </span>
                     </td>
                     <td className="mono">{timeFormat.format(new Date(entry.timestamp))}</td>
-                  </tr>
-                  {open && (
-                    <tr className="details-row" id={detailsId}>
-                      <td colSpan={7}>
-                        <LogDetails entry={entry} />
-                      </td>
-                    </tr>
-                  )}
+                  </motion.tr>
+
+                  <AnimatePresence initial={false}>
+                    {open && (
+                      <tr className="details-row" id={detailsId} key={detailsId}>
+                        <td colSpan={7}>
+                          <motion.div
+                            style={{ overflow: 'hidden' }}
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.28, ease: EASE_OUT }}
+                          >
+                            <LogDetails entry={entry} />
+                          </motion.div>
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
                 </Fragment>
               )
             })}

@@ -2,6 +2,7 @@ import { SERVICE_LABELS, STATUS_LABELS, text } from '../labels'
 import type { CallStatus, LogFilters as Filters, ServiceId } from '../types'
 import { SERVICE_IDS } from '../types'
 import { CloseIcon } from './Icons'
+import { SegmentedControl } from './SegmentedControl'
 
 interface LogFiltersProps {
   filters: Filters
@@ -10,42 +11,36 @@ interface LogFiltersProps {
 
 export const EMPTY_FILTERS: Filters = { service: '', status: '', from: '', to: '' }
 
+const serviceOptions = [
+  { value: '' as const, label: text.filterAll },
+  ...SERVICE_IDS.map((id) => ({ value: id, label: SERVICE_LABELS[id] })),
+]
+
+const statusOptions = [
+  { value: '' as const, label: text.filterAll },
+  ...(Object.keys(STATUS_LABELS) as CallStatus[]).map((status) => ({ value: status, label: STATUS_LABELS[status] })),
+]
+
 export function LogFilters({ filters, onChange }: LogFiltersProps) {
   const isActive = Object.values(filters).some(Boolean)
 
   return (
     <form className="filters" onSubmit={(event) => event.preventDefault()}>
-      <label>
-        <span>{text.filterService}</span>
-        <select
-          value={filters.service}
-          onChange={(e) => onChange({ ...filters, service: e.target.value as ServiceId | '' })}
-        >
-          <option value="">{text.filterAll}</option>
-          {SERVICE_IDS.map((id) => (
-            <option key={id} value={id}>
-              {SERVICE_LABELS[id]}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SegmentedControl<ServiceId | ''>
+        label={text.filterService}
+        value={filters.service}
+        options={serviceOptions}
+        onChange={(service) => onChange({ ...filters, service })}
+      />
 
-      <label>
-        <span>{text.filterStatus}</span>
-        <select
-          value={filters.status}
-          onChange={(e) => onChange({ ...filters, status: e.target.value as CallStatus | '' })}
-        >
-          <option value="">{text.filterAll}</option>
-          {(Object.keys(STATUS_LABELS) as CallStatus[]).map((status) => (
-            <option key={status} value={status}>
-              {STATUS_LABELS[status]}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SegmentedControl<CallStatus | ''>
+        label={text.filterStatus}
+        value={filters.status}
+        options={statusOptions}
+        onChange={(status) => onChange({ ...filters, status })}
+      />
 
-      <label>
+      <label className="field">
         <span>{text.filterFrom}</span>
         <input
           type="datetime-local"
@@ -55,7 +50,7 @@ export function LogFilters({ filters, onChange }: LogFiltersProps) {
         />
       </label>
 
-      <label>
+      <label className="field">
         <span>{text.filterTo}</span>
         <input
           type="datetime-local"

@@ -66,4 +66,11 @@ export const text = {
   retry: 'Reintentar',
   loading: 'Cargando datos…',
   ms: 'ms',
+  offline: 'Sin conexión',
+  errorsLabel: 'Errores',
+  filteringOn: 'Filtrando registros',
+  cardHint: 'Clic para filtrar registros',
+  legendToggle: 'Mostrar u ocultar serie',
+  dismiss: 'Cerrar aviso',
+  nextRefresh: 'Próxima actualización en 3 segundos',
 }

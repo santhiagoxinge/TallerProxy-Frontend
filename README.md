@@ -4,8 +4,8 @@ Real-time observability dashboard for the **Proxy pattern workshop**. It visuali
 [backend](https://github.com/santhiagoxinge/TallerProxy-backend-) logging proxy intercepts across three
 microservices (Inventory, Orders, Payments). The interface is in Spanish; the code is in English.
 
-Built with React, TypeScript, Vite and Recharts, with a liquid glass visual style (translucent, blurred
-surfaces over a softly moving color backdrop).
+Built with React, TypeScript, Vite, Recharts and Motion, with a light liquid glass visual style: translucent, blurred
+surfaces over a frosted-glass photograph (`public/bg-glass.jpg`) that drifts with the pointer.
 
 ## Live deployment
 
@@ -26,11 +26,22 @@ while the service wakes up. The dashboard keeps retrying automatically.
 - **Simulate load** button that calls the simulation endpoint and refreshes the dashboard.
 - If the backend becomes unreachable, the last received data stays visible with a retry banner.
 
+### Interactions and motion
+
+- Click a **service card** to filter the logs by that service (and focus its line in the chart). Click again to clear.
+- The **chart legend** toggles each series; hovering a chip highlights its line.
+- Cards tilt toward the pointer, glass surfaces show a specular highlight that follows the cursor, and the primary
+  button leans toward the pointer.
+- Counters and success-rate rings animate to new values; new log rows slide in and flash; details expand smoothly.
+- A ring next to "En vivo" fills over each 3-second polling window.
+- All motion respects `prefers-reduced-motion`, `prefers-reduced-transparency` and `prefers-contrast`.
+
 ## Stack
 
 - React 19 + TypeScript
 - Vite
 - Recharts
+- Motion (`motion/react`)
 
 ## Run locally
 

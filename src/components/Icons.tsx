@@ -42,6 +42,12 @@ export const BoltIcon = () => (
   </Icon>
 )
 
+export const SpinnerIcon = () => (
+  <Icon className="spin">
+    <path d="M21 12a9 9 0 1 1-6.2-8.55" />
+  </Icon>
+)
+
 export const CloseIcon = () => (
   <Icon>
     <path d="M18 6 6 18M6 6l12 12" />
