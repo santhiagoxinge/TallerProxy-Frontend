@@ -7,6 +7,14 @@ microservices (Inventory, Orders, Payments). The interface is in Spanish; the co
 Built with React, TypeScript, Vite and Recharts, with a liquid glass visual style (translucent, blurred
 surfaces over a softly moving color backdrop).
 
+## Live deployment
+
+- Frontend (Vercel): https://taller-proxy-frontend-one.vercel.app
+- Backend (Render): https://taller-proxy-backend.onrender.com
+
+The backend runs on Render's free plan, so the first request after a period of inactivity can take about a minute
+while the service wakes up. The dashboard keeps retrying automatically.
+
 ## Features
 
 - **Service cards** for Inventory, Orders and Payments: total calls, success rate and average response time.
@@ -52,7 +60,7 @@ npm run dev                     # http://localhost:5173
 ## Deploy (Vercel)
 
 1. Import this repository in Vercel (framework preset: **Vite**).
-2. Add the environment variable `VITE_API_URL` pointing to the deployed backend (Railway).
+2. Add the environment variable `VITE_API_URL` pointing to the deployed backend (Render).
 3. Deploy. Optionally restrict the backend with `CORS_ALLOWED_ORIGINS` set to the Vercel URL.
 
 Or with the CLI:
